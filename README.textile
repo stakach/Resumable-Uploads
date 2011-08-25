@@ -1,0 +1,34 @@
+h1. Resumable File Uploads for HTML5
+
+These are the skeleton files for providing resumable file uploads in Rails.
+
+
+h2. How it works
+
+# You drag and drop a large file for uploading (or use file input, yawn)
+# Using JavaScript FileAPI we send a simple fingerprint of the file to the server
+#* filename, file size, modified date - the user is also taken into account, determined by the current session data
+# The server looks for an existing matching file
+#* If not found it creates a new one
+#* Then it returns the file_id and the part of the file we are up to
+# The JavaScript looks at the response then sends the next part of the file
+# The server appends the part to the file then requests the next part
+# ...
+
+I've defined the part size to be a constant 1mb (1024 x 1024). Feel free to adjust this as you see fit.
+
+
+h2. Using it with Rails 3
+
+I've made the following assumptions
+* You are validating users before letting them upload
+
+h3. Basic Usage
+
+Coming sooon. Code works, just need to put the finishing touches on the Engine version.
+
+
+h2. Credits
+
+The client side code was refactored and inspired by: http://code.google.com/p/jquery-html5-upload/
+
