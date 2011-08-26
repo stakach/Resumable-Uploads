@@ -22,10 +22,11 @@ h2. Using it with Rails 3
 
 I've made the following assumptions
 * You are validating users before letting them upload
+** There are callbacks to obtain this information
 
 h3. Basic Usage
 
-Coming sooon. Code works, just need to put the finishing touches on the Engine version.
+Coming sooon.
 
 
 h2. Credits

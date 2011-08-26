@@ -1,5 +1,7 @@
 module Resolute
 	class ResumablesController < ApplicationController
+		respond_to :json
+		
 		def resumable_upload
 			user = get_current_user
 			raise "Security Transgression" if user.nil?
@@ -62,7 +64,11 @@ module Resolute
 			# => We'll provide JS hooks to inform the user if this is the case
 			#
 			FileUtils.cp params[:uploaded_file].tempfile.path, filepath	# file copy here
-			inform_upload_completed(params[:uploaded_file].original_filename, filepath, params[:custom])
+			if(params[:custom].nil?)
+				inform_upload_completed(params[:uploaded_file].original_filename, filepath)
+			else
+				inform_upload_completed(params[:uploaded_file].original_filename, filepath, JSON.parse(params[:custom], {:symbolize_names => true}))
+			end
 			
 			render :nothing => true, :layout => false
 		end

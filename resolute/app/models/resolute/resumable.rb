@@ -40,9 +40,11 @@ module Resolute
 			JSON.parse(self[:paramters], {:symbolize_names => true})
 		end
 		
-		def paramters=(paramHash)
-			self[:paramters] = paramHash.to_json
-		end
+		##
+		# Not needed as sent to the server as a JSON string
+		#def paramters=(paramHash)
+		#	self[:paramters] = paramHash.to_json
+		#end
 		
 		
 		protected

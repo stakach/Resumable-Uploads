@@ -122,7 +122,7 @@
 				return false;
 			}
 			
-			if ($this[0].nodeName == 'input') {
+			if ($this.is('input')) {
 				$this.attr('disabled', true);
 			}
 			var uploaded = 0;
@@ -135,7 +135,7 @@
 			function upload_finished(number) {
 				$this.trigger('onFinish.uploader', [number]);
 				
-				if ($this[0].nodeName == 'input') {
+				if ($this.is('input')) {
 					$this.attr('disabled', false);
 					if (options.autoclear) {
 						$this.val('');
@@ -191,16 +191,15 @@
 				// Anything over a 1MB we chunk upload if we can slice the file
 				//
 				if(!!options.partURL && file.size > (1024 * 1024) && typeof(file.slice || file.mozSlice || file.webkitSlice) == 'function') {
-					var theurl = typeof(options.partURL) == 'function' ? options.partURL() : options.partURL,
-					params = typeof(options.additionalParameters) == 'function' ? options.additionalParameters() : options.additionalParameters;
-					if(!!!params)
-						params = {};	// Ensure params exists
+					var theurl = (typeof(options.baseURL) == 'function' ? options.baseURL() : options.baseURL) + '/resumable_upload.json',
+					params = {
+						'resume[file_name]': file.name,
+						'resume[file_size]': file.size,
+						'resume[file_modified]': file.lastModifiedDate
+					};
 					
-					jQuery.extend(params, {
-						"resume[file_name]": file.name,
-						"resume[file_size]": file.size,
-						"resume[file_modified]": file.lastModifiedDate
-					});
+					if(!!options.additionalParameters)
+						params['resume[paramters]'] = JSON.stringify(typeof(options.additionalParameters) == 'function' ? options.additionalParameters(file) : options.additionalParameters);
 					
 					//
 					// Ensure the slice method is defined
@@ -231,7 +230,7 @@
 								
 								$this.data('uploader')['xhr'] = $.ajax({
 									url: theurl,
-									type: options.http_method,
+									type: 'POST',
 									data: f,
 									processData: false,		// Do not process the data
 									contentType: false,
@@ -239,9 +238,9 @@
 										var xhr = new XMLHttpRequest();
 										$this.data('uploader')['xhr'] = xhr;
 										xhr.upload['onprogress'] = function(rpe){
-											$this.trigger('onUploadProgress.uploader', [offset + rpe.loaded / file.size, file.name, number, total]);
-											options.setStatus(options.genStatus(offset + rpe.loaded / file.size));
-											options.setProgress(options.genProgress(offset + rpe.loaded / file.size));
+											$this.trigger('onUploadProgress.uploader', [(offset + rpe.loaded) / file.size, file.name, number, total]);
+											options.setStatus(options.genStatus((offset + rpe.loaded) / file.size));
+											options.setProgress(options.genProgress((offset + rpe.loaded), file.size));
 										};
 										return xhr;
 									},
@@ -288,21 +287,16 @@
 				//
 				} else {
 					var f = new FormData(),
-						params = typeof(options.additionalParameters) == 'function' ? options.additionalParameters(file) : options.additionalParameters
-					;
+						params;
 					
-					if(!!params) {	// If not undefined
-						$.each(params, function(key,val){
-							val = typeof(val) == 'function' ? val(file) : val;	// resolve value
-							f.append(key, value);
-						});
-					}
-					
-					f.append(options.fileParameter, file);
+					if(!!options.additionalParameters)
+						f.append('custom', JSON.stringify(typeof(options.additionalParameters) == 'function' ? options.additionalParameters(file) : options.additionalParameters));
+										
+					f.append('uploaded_file', file);
 					
 					$.ajax({
-						url: typeof (options.fileURL) == 'function' ? options.fileURL() : options.fileURL,
-						type: options.http_method,
+						url: (typeof(options.baseURL) == 'function' ? options.baseURL() : options.baseURL) + '/regular_upload.json',
+						type: 'POST',
 						data: f,
 						processData: false,		// Do not process the data
 						contentType: false,
@@ -362,7 +356,7 @@
 			//
 			// Bind the appropriate events (Depending on the object type)
 			//
-			if ($this[0].nodeName == 'input') {
+			if ($this.is('input')) {
 				if (options.autostart)
 					$this.bind('change.uploader', upload_input);
 			}
