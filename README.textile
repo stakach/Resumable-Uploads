@@ -1,6 +1,7 @@
 h1. Resumable File Uploads for HTML5
 
 These are the skeleton files for providing resumable file uploads in Rails.
+If someone wants to turn this into a proper gem let me know.
 
 
 h2. How it works
@@ -13,20 +14,93 @@ h2. How it works
 #* Then it returns the file_id and the part of the file we are up to
 # The JavaScript looks at the response then sends the next part of the file
 # The server appends the part to the file then requests the next part
-# ...
+# and so on...
 
 I've defined the part size to be a constant 1mb (1024 x 1024). Feel free to adjust this as you see fit.
 
 
-h2. Using it with Rails 3
+h2. Using it with Rails 3.1
 
 I've made the following assumptions
 * You are validating users before letting them upload
 ** There are callbacks to obtain this information
+* Once the upload has occured you will be performing post processing of some sort
+** Creating a DB entry to manage the location of the file, as the most basic example
 
 h3. Basic Usage
 
-Coming sooon.
+# Copy folder into the vendor directory (not the plugins folder)
+# Create an entry in your gem file for it: gem 'resolute', :path => '/vendor/resolute'
+# Create an initializer for the configuration: config/initializers/uploads.rb (for example)
+#* Enter config (outlined in the next section)
+# Include *resumables.js* file in your app/assets/javascripts/application.js file
+# Configure the client side jQuery as you wish (details coming soon)
+
+h3. Engine Config
+
+In you initializer you should initialize the following in a similar method to below:
+
+<pre>
+<code>
+
+	Resolute.current_user do
+		#
+		# This is run in the context of the controller
+		#	Return a unique identifier that can be stringified
+		#
+		session[:user]
+	end
+	
+	Resolute.upload_completed  do  |result|
+		me = Model.new(result)
+		me.save
+		if me.new_record?
+			#
+			# If the uploaded file is not required delete it here too
+			#
+			return me.errors	# Provide the client side with some information
+		else
+			return true
+		end
+	end
+	
+	#
+	# These are the defaults for the following two options:
+	#
+	
+	Resolute.upload_folder = 'tmp/uploading'	# Folder is created if it doesn't exist
+	
+	#
+	# Provides a way to prevent an upload as early as possible
+	#	Return false or an array of errors
+	#
+	Resolute.check_supported = Proc.new {|file_info| return true}	# Can also be defined as a block like above
+
+
+</code>
+</pre>
+
+
+The engine also needs to have a base path defined in routes: config/routes.rb
+Create an entry where ever you want, eg:
+
+<pre>
+<code>
+	mount Resolute::Engine => "/uploads"
+</code>
+</pre>
+
+
+h3. Client side JavaScript
+
+Provides the hooks into your web application to provide upload hotspots (think gmail uploads) and feedback
+
+<pre>
+<code>
+	coming soon...
+</code>
+</pre>
+
 
 
 h2. Credits

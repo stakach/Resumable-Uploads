@@ -2,9 +2,29 @@ module Resolute
 	class ResumablesController < ApplicationController
 		respond_to :json
 		
+		
+		##
+		# These are for testing 
+		#
+		def load_session
+			session[:user] = 12
+			render :text => "session loaded, folder path: #{Resolute.upload_folder}", :layout => false
+		end
+		
+		def index
+			user = get_current_user
+			render :text => "user test: #{user}<br />App Class returned: #{inform_upload_completed(user, nil, nil, nil)}", :layout => false
+		end
+		#
+		# Disabled in routes by default
+		##
+		
 		def resumable_upload
 			user = get_current_user
-			raise "Security Transgression" if user.nil?
+			if user.nil?
+				render :nothing => true, :layout => false, :status => :forbidden	# 403
+				return
+			end
 			
 			
 			if request.get?
@@ -26,9 +46,13 @@ module Resolute
 				#
 				if(found.nil?)
 					#
-					# TODO:: Put in hooks to check if file is a valid format before upload
-					# => We'll provide JS callbacks for handling this
+					# Check if file is a valid format before upload
 					#
+					resp = check_format_supported(user, resume.file_name, resume.paramters)
+					if resp != true
+						process_bad_request(resp)
+						return	# Ensure only a single call to render
+					end
 					resume.save
 				else
 					resume = found
@@ -40,12 +64,24 @@ module Resolute
 				# Recieve a chunk of data and save it
 				#
 				resume = Resumable.find(params[:id])
-				raise "Security Transgression" unless resume.user_id == user.to_s
+				if resume.user_id != user.to_s
+					render :nothing => true, :layout => false, :status => :forbidden	# 403
+					return
+				end
 				
 				next_part = resume.apply_part(params[:part].to_i, params[:chunk])
 				
 				if next_part == false
-					inform_upload_completed(resume.file_name, resume.file_location, resume.paramters)
+					resp = inform_upload_completed(user, resume.file_name, resume.file_location, resume.paramters)
+					resume.destroy	# Always destroy this DB entry. Project code must deal with file
+					
+					#
+					# Check response
+					#
+					if resp != true
+						process_bad_request(resp)
+						return	# Ensure only a single call to render
+					end
 				end
 				render :json => {:next_part => next_part}, :layout => false
 			end
@@ -54,37 +90,81 @@ module Resolute
 		
 		def regular_upload	# Well still HTML5 (just not multi-part)
 			user = get_current_user
-			raise "Security Transgression" if user.nil?
+			if user.nil?
+				render :nothing => true, :layout => false, :status => :forbidden	# 403
+				return
+			end
 			
 			filepath = Resumable.sanitize_filename(params[:uploaded_file].original_filename, user)
 			
-			#
-			# TODO:: Put in hooks to check if file is the correct format before copy
-			# => The copy allows us to process in the background without it being deleted
-			# => We'll provide JS hooks to inform the user if this is the case
-			#
-			FileUtils.cp params[:uploaded_file].tempfile.path, filepath	# file copy here
-			if(params[:custom].nil?)
-				inform_upload_completed(params[:uploaded_file].original_filename, filepath)
-			else
-				inform_upload_completed(params[:uploaded_file].original_filename, filepath, JSON.parse(params[:custom], {:symbolize_names => true}))
+			if !params[:custom].nil?	# Normalise params
+				params[:custom] = JSON.parse(params[:custom], {:symbolize_names => true})
 			end
 			
+			#
+			# Check if file is the correct format before copying out of temp folder
+			#
+			resp = check_format_supported(user, params[:uploaded_file].original_filename, params[:custom])
+			if resp != true
+				process_bad_request(resp)
+				return	# Ensure only a single call to render
+			end
+			
+			# file copy here
+			FileUtils.cp params[:uploaded_file].tempfile.path, filepath
+			
+			#
+			# Inform that upload is complete (file in uploads directory)
+			#
+			resp = false
+			resp = inform_upload_completed(user, params[:uploaded_file].original_filename, filepath, params[:custom])
+			
+			if resp != true
+				process_bad_request(resp)
+				return	# Ensure only a single call to render
+			end
 			render :nothing => true, :layout => false
 		end
 		
 		
 		protected
 		
-		#
-		# Will work with a proc or lambda
-		#
-		def get_current_user
-			return Resolute.current_user_callback.call
+		
+		def process_bad_request(resp)
+			if resp.class == Array 	# Assume error array
+				#
+				# We assume array is the error list
+				#
+				render :json => {:error => resp}, :layout => false, :status => :not_acceptable	# 406
+			else
+				render :nothing => true, :layout => false, :status => :unprocessable_entity		# 422
+			end
 		end
 		
-		def inform_upload_completed(oringinal_name, current_path, custom_parameters)
-			Resolute.completed_callback.call(oringinal_name, current_path, custom_parameters)
+		#
+		# Get current user needs to be called in the context of the controller
+		#
+		def get_current_user
+			instance_eval &Resolute.current_user
+		end
+		
+		def inform_upload_completed(user, oringinal_name, current_path, custom_parameters = nil)
+			result = {
+				:user => user,
+				:filename => oringinal_name,
+				:filepath => current_path,
+				:params => custom_parameters
+			}
+			Resolute.upload_completed.call(result)
+		end
+		
+		def check_format_supported(user, filename, custom_parameters)
+			file_info = {
+				:user => user,
+				:filename => filename,
+				:params => custom_parameters
+			}
+			Resolute.check_supported.call(file_info)
 		end
 	end
 end

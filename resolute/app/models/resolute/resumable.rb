@@ -37,6 +37,9 @@ module Resolute
 		# Store any paramters that were passed with this object
 		#
 		def paramters
+			if self[:paramters].nil?
+				return nil
+			end
 			JSON.parse(self[:paramters], {:symbolize_names => true})
 		end
 		
@@ -65,7 +68,7 @@ module Resolute
 			
 			# Finally, replace all non alphanumeric or periods with underscore
 			newname = "#{Time.now.to_i}" + filename.gsub(/[^\w\.\-]/,'_')
-			filepath = File.join(Resolute.uploading_path, user.gsub(/[^\w\.\-]/,'_'))
+			filepath = File.join(Resolute.upload_folder, user.gsub(/[^\w\.\-]/,'_'))
 			
 			FileUtils.makedirs filepath
 			return File.join(filepath, newname)
