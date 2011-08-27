@@ -1,3 +1,13 @@
+###
+#
+#	Copyright (c) 2011 Advanced Control and Acoustics
+#
+#	@author 	Stephen von Takach <steve@advancedcontrol.com.au>
+#	@copyright  2011 advancedcontrol.com.au
+#	@license	GNU LESSER GENERAL PUBLIC LICENSE Version 3
+#
+###
+
 module Resolute
 	class Resumable < ActiveRecord::Base
 		before_create	:ready_file

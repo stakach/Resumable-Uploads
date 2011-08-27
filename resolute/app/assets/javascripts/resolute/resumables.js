@@ -39,7 +39,7 @@
 				},
 				onUploadProgress: function(event, progress, name, number, total) { },
 				onUploadFinish: function(event, response, name, number, total) { },
-				onUploadError: function(event, name, error) { },
+				onUploadError: function(event, name, error, messages) { },
 				onFinish: function(event, total) { },
 				
 				
@@ -80,7 +80,7 @@
 				//
 				// Application data required
 				//
-				//	additionalParameters: JS Object
+				//	additionalParameters: JS Object or function(file) {}
 				//
 				baseURL: '/uploads',	// resumable_upload, regular_upload
 				
@@ -177,8 +177,17 @@
 				//
 				// Complete upload error
 				//
-				function on_error(e) {
-					$this.trigger('onUploadError.uploader', [file.name, e]);
+				function on_error(xhr, e) {
+					message = {error: null}
+					
+					if (xhr.status == 403)			// Forbidden - ie not logged in or not your file
+						message.error = 'access denied';
+					else if  (xhr.status == 406)	// Not acceptable - could not save, maybe bad params or file format. There is a message avaliable
+						message.error = jQuery.parseJSON(xhr.responseText).error;	// This will always be an array
+					//else if  (xhr.status == 422)	// unprocessable entity - unknown error. Could not save and no error message
+					//	message['error'] = '';
+					
+					$this.trigger('onUploadError.uploader', [file.name, e, message]);
 					if (options.halt_on_error) {
 						upload_finished(number);
 					} else {
@@ -212,7 +221,7 @@
 						data: params,
 						type: 'GET',
 						dataType: 'json',
-						success: function (data, status, xhr) {
+						done: function (data, status, xhr) {
 							var retries = 0;
 							
 							function sendChunk(currentPart) {								
@@ -245,7 +254,7 @@
 										return xhr;
 									},
 									dataType: 'json',
-									success: function (data, status, xhr) {
+									done: function (data, status, xhr) {
 										if(data.next_part == false) {
 											$this.triggerHandler('onUploadFinish.uploader', [xhr.responseText, file.name, number, total]);
 											options.setStatus(options.genStatus(1, true));
@@ -256,15 +265,15 @@
 											sendChunk(data.next_part);
 										}
 									},
-									error: function (xhr, status, error) {
+									fail: function (xhr, status, error) {
 										if(options.retry_part_errors && retries < options.retry_limit) {
 											retries = retries + 1;
 											sendChunk(currentPart);
 										}
 										else
-											on_error(error);
+											on_error(xhr, error);
 									},
-									complete: function(xhr, status) {
+									always: function(xhr, status) {
 										if(status == 'abort')
 											abort();
 									}
@@ -273,10 +282,10 @@
 							
 							sendChunk(data.next_part);
 						},
-						error: function (xhr, status, error) {
-							on_error(error);
+						fail: function (xhr, status, error) {
+							on_error(xhr, error);
 						},
-						complete: function(xhr, status) {
+						always: function(xhr, status) {
 							if(status == 'abort')
 								abort();
 						}
@@ -318,16 +327,16 @@
 								xhr.setRequestHeader(key, val);
 							});
 						},
-						success: function (data, status, xhr) {
+						done: function (data, status, xhr) {
 							$this.triggerHandler('onUploadFinish.uploader', [xhr.responseText, file.name, number, total]);
 							options.setStatus(options.genStatus(1, true));
 							options.setProgress(options.genProgress(file.size, file.size));
 							upload_file(number + 1);
 						},
-						error: function (xhr, status, error) {
-							on_error(error);
+						fail: function (xhr, status, error) {
+							on_error(xhr, error);
 						},
-						complete: function(xhr, status) {
+						always: function(xhr, status) {
 							if(status == 'abort')
 								abort();
 						}

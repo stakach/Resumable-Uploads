@@ -1,7 +1,6 @@
 h1. Resumable File Uploads for HTML5
 
 These are the skeleton files for providing resumable file uploads in Rails.
-If someone wants to turn this into a proper gem let me know.
 
 
 h2. How it works
@@ -33,12 +32,16 @@ h3. Basic Usage
 # Create an entry in your gem file for it: gem 'resolute', :path => '/vendor/resolute'
 # Create an initializer for the configuration: config/initializers/uploads.rb (for example)
 #* Enter config (outlined in the next section)
+# Update your routes
+# Run migrations
+#* First need to copy over the migrations: rake railties:install:migrations
+#* Then: rake db:migrate
 # Include *resumables.js* file in your app/assets/javascripts/application.js file
-# Configure the client side jQuery as you wish (details coming soon)
+# Configure the client side jQuery as you wish (outlined below)
 
 h3. Engine Config
 
-In you initializer you should initialize the following in a similar method to below:
+In your initializer:
 
 <pre>
 <code>
@@ -52,11 +55,20 @@ In you initializer you should initialize the following in a similar method to be
 	end
 	
 	Resolute.upload_completed  do  |result|
+		#
+		#	Result is a hash with the following fields
+		#		:user	(user identifier defined by current_user above)
+		#		:filename (original, unmodified, filename as sent from client side)
+		#		:filepath (relational path to the file)
+		#		:params (any custom parameters from the client side)
+		#		:resumable - the resumable db entry. Will be automatically destroyed on success, not on failure.
+		#						This provides you the opportunity to destroy it if you like. Will be nil if it is a regular upload.
+		#
 		me = Model.new(result)
 		me.save
 		if me.new_record?
 			#
-			# If the uploaded file is not required delete it here too
+			# If the uploaded file is not required delete it and destroy resumable here too
 			#
 			return me.errors	# Provide the client side with some information
 		else
@@ -67,14 +79,16 @@ In you initializer you should initialize the following in a similar method to be
 	#
 	# These are the defaults for the following two options:
 	#
-	
 	Resolute.upload_folder = 'tmp/uploading'	# Folder is created if it doesn't exist
 	
 	#
 	# Provides a way to prevent an upload as early as possible
-	#	Return false or an array of errors
+	#	Return false or an array of errors if the file type is not supported (determined from filename)
 	#
 	Resolute.check_supported = Proc.new {|file_info| return true}	# Can also be defined as a block like above
+		#
+		# File_info hash contains the following - :user, :filename, :params (any custom parameters from the client side)
+		#
 
 
 </code>
@@ -82,7 +96,7 @@ In you initializer you should initialize the following in a similar method to be
 
 
 The engine also needs to have a base path defined in routes: config/routes.rb
-Create an entry where ever you want, eg:
+Create an entry where ever you want, the client side defaults to /uploads
 
 <pre>
 <code>
@@ -97,7 +111,123 @@ Provides the hooks into your web application to provide upload hotspots (think g
 
 <pre>
 <code>
-	coming soon...
+	
+	$('#file_input, #drop_spot').resumable({
+		//
+		// Event callbacks
+		//
+		onStart: function(event, total) { return true; },
+		onUploadStarted: function(event, name, number, total) { return true; },
+		onUploadProgress: function(event, progress, name, number, total) { },
+		onUploadFinish: function(event, response, name, number, total) { },
+		onUploadError: function(event, name, error, messages) { },
+		onFinish: function(event, total) { },
+		
+		startDragHover: function(){},	// Hovering over hotspot
+		endDragHover: function(){},		// No longer hovering over the hotspot
+		
+		//
+		// Informational callbacks
+		//
+		setName: function(text) { },
+		setStatus: function(text) { },
+		setProgress: function(value) { },
+		
+		//
+		// Configuration options
+		//
+		baseURL: '/uploads',	// Default
+		//additionalParameters: JS Object or function(file) {return {params: 'data'}},
+		
+		autostart: true,			// On change if using input box
+		autoclear: true,			// Clears the file upload input box once complete
+		retry_part_errors: false,	// Applies only to resumable uploads
+		retry_limit: 3,				// Number of part retries before giving up
+		halt_on_error: false		// Stop uploading further files?
+	});
+	
+	//
+	// A more realistic setup with jquery ui
+	//
+	if ($.support.filereader && $.support.formdata) {	// Check HTML5 uploads are workable
+		var diag = $('<div />').html('<div></div><p></p>');
+		var progress = diag.children('div').progressbar({
+			value: 0
+		});
+		var status = diag.children('p');
+		var failures = 0;
+		
+		$('#drop_spot').resumable({
+			onStart: function (event, total) {
+				// Make sure we warn the user before exiting the page while uploading
+				window.onbeforeunload = function() {return "You are attempting to leave this page while an upload is taking place. Are you sure you want to leave?";};
+				
+				failures = 0;
+				progress.progressbar("value", 0);
+
+				var thebuttons = {};
+				thebuttons["Cancel"] = function () {
+					$('#drop_spot').trigger('cancelAll');
+				};
+				diag.dialog({
+					modal: true,
+					buttons: thebuttons,
+					close: function (event, ui) {
+						if (window.onbeforeunload != null)
+							draghotspot.trigger('cancelAll');	// This will call onFinish
+					}
+				});
+				return true;
+			},
+			setName: function (text) {
+				diag.dialog("option", "title", text);
+			},
+			setStatus: function (text) {
+				status.text(text);
+			},
+			setProgress: function (val) {
+				progress.progressbar("value", Math.ceil(val * 100));
+			},
+			onUploadError: function(event, name, error, messages) {
+				failures = failures + 1;
+				var inner = '<p>There were some issues uploading ' + name + ':</p><ul>';
+				
+				//
+				// Display active record validation errors if avaliable
+				//
+				if(messages.error.constructor == Array) {
+					$.each(messages.error, function (key, val) {
+						inner = inner + '<li>' + key + '<ul>';
+						$.each(val, function (index, inval) {
+							inner = inner + '<li>' + inval + '</li>';
+						});
+						inner = inner + '</ul></li>';
+					});
+				} else if (messages.error != null) {
+					inner = inner + '<li>' + messages.error + '</li>';
+				} else {
+					inner = inner + '<li>' + error + '</li>';
+				}
+				inner = inner + '</ul>';
+				$.noticeAdd({ text: inner, stay: true });
+			},
+			onFinish: function (event, total) {
+				window.onbeforeunload = null; 		// No more need for user warning
+				diag.dialog("close").dialog("destroy");
+				//
+				// Update view here then inform users
+				//
+				$.noticeAdd({ text: (total - failures) + " items successfully uploaded", stayTime: 6000 });
+			},
+			startDragHover: function(){
+				$('#drop_spot > #highlighter').stop(true).animate({opacity:1});
+			},
+			endDragHover: function(){
+				$('#drop_spot > #highlighter').stop(true).animate({opacity:0.2});
+			}
+		});
+	}
+
 </code>
 </pre>
 

@@ -1,3 +1,13 @@
+###
+#
+#	Copyright (c) 2011 Advanced Control and Acoustics
+#
+#	@author 	Stephen von Takach <steve@advancedcontrol.com.au>
+#	@copyright  2011 advancedcontrol.com.au
+#	@license	GNU LESSER GENERAL PUBLIC LICENSE Version 3
+#
+###
+
 module Resolute
 	class ResumablesController < ApplicationController
 		respond_to :json
@@ -72,8 +82,7 @@ module Resolute
 				next_part = resume.apply_part(params[:part].to_i, params[:chunk])
 				
 				if next_part == false
-					resp = inform_upload_completed(user, resume.file_name, resume.file_location, resume.paramters)
-					resume.destroy	# Always destroy this DB entry. Project code must deal with file
+					resp = inform_upload_completed(user, resume.file_name, resume.file_location, resume.paramters, resume)
 					
 					#
 					# Check response
@@ -81,6 +90,10 @@ module Resolute
 					if resp != true
 						process_bad_request(resp)
 						return	# Ensure only a single call to render
+					else
+						if !resume.destroyed?
+							resume.destroy	# Destroy the DB entry for this resumable upload. Application logic is now managing the file
+						end
 					end
 				end
 				render :json => {:next_part => next_part}, :layout => false
@@ -132,9 +145,6 @@ module Resolute
 		
 		def process_bad_request(resp)
 			if resp.class == Array 	# Assume error array
-				#
-				# We assume array is the error list
-				#
 				render :json => {:error => resp}, :layout => false, :status => :not_acceptable	# 406
 			else
 				render :nothing => true, :layout => false, :status => :unprocessable_entity		# 422
@@ -148,12 +158,13 @@ module Resolute
 			instance_eval &Resolute.current_user
 		end
 		
-		def inform_upload_completed(user, oringinal_name, current_path, custom_parameters = nil)
+		def inform_upload_completed(user, oringinal_name, current_path, custom_parameters = nil, db_entry = nil)
 			result = {
 				:user => user,
 				:filename => oringinal_name,
 				:filepath => current_path,
-				:params => custom_parameters
+				:params => custom_parameters,
+				:resumable => db_entry
 			}
 			Resolute.upload_completed.call(result)
 		end
