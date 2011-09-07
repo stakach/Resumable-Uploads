@@ -1,3 +1,6 @@
+//= require resolute/aca-i18n
+
+
 /**
 *	jQuery.resumable()
 *	This provides HTML5 uploads with a resume function if it is avaliable.
@@ -40,36 +43,30 @@
 				onUploadProgress: function(event, progress, name, number, total) { },
 				onUploadFinish: function(event, response, name, number, total) { },
 				onUploadError: function(event, name, error, messages) { },
-				onFinish: function(event, total) { },
+				onFinish: function(event, total, failures) { },
 				
 				
 				//
 				// Status feedback options
 				//
-				status_text: {
-					'STARTED': 'Started',
-					'UPLOADING': 'Uploading',
-					'UPLOADED': 'Uploaded',
-					'FINISHED': 'Complete'
-				},
 				setName: function(text) { },
 				setStatus: function(text) { },
 				setProgress: function(value) { },
 				genName: function(file, number, total) {
-					return file + "(" + (number + 1) + " of " + total + ")";
+					return translate(i18n_resumables.progress, file, (number + 1), total);
 				},
 				genStatus: function(progress, finished) {
 					if (finished) {
-						return options.status_text['FINISHED'];
+						return i18n_resumables.status.FINISHED;
 					}
 					if (progress == 0) {
-						return options.status_text['STARTED'];
+						return i18n_resumables.status.STARTED;
 					}
 					else if (progress == 1) {
-						return options.status_text['UPLOADED'];
+						return i18n_resumables.status.UPLOADED;
 					}
 					else {
-						return options.status_text['UPLOADING'];
+						return i18n_resumables.status.UPLOADING;
 					}
 				},
 				genProgress: function(loaded, total) {
@@ -80,8 +77,7 @@
 				//
 				// Application data required
 				//
-				//	additionalParameters: JS Object or function(file) {}
-				//
+				additionalParameters: {},//JS Object or function(file)
 				baseURL: '/uploads',	// resumable_upload, regular_upload
 				
 				
@@ -113,7 +109,8 @@
 		// Uploads files using HTML5 FileAPI
 		//
 		function upload(files) {
-			var total = files.length;
+			var total = files.length,
+				failures = 0;
 				
 			if (total == 0) {
 				return false; // Safari will try and upload 0 files
@@ -132,8 +129,8 @@
 			//
 			// Call this when we stop uploading
 			//
-			function upload_finished(number) {
-				$this.trigger('onFinish.uploader', [number]);
+			function upload_finished(number, failures) {
+				$this.trigger('onFinish.uploader', [number, failures]);
 				
 				if ($this.is('input')) {
 					$this.attr('disabled', false);
@@ -148,7 +145,7 @@
 			//
 			function upload_file(number) {
 				if (number == total) {
-					upload_finished(number);
+					upload_finished(number, failures);
 					options.setStatus(options.genStatus(1, true));
 					return;
 				}
@@ -170,7 +167,7 @@
 						upload_file(number + 1);
 					}
 					else {
-						upload_finished(number);
+						upload_finished(number, failures);
 					}
 				};
 				
@@ -187,9 +184,11 @@
 					//else if  (xhr.status == 422)	// unprocessable entity - unknown error. Could not save and no error message
 					//	message['error'] = '';
 					
+					failures = failures + 1;
+					
 					$this.trigger('onUploadError.uploader', [file.name, e, message]);
 					if (options.halt_on_error) {
-						upload_finished(number);
+						upload_finished(number, failures);
 					} else {
 						upload_file(number + 1);
 					}
@@ -198,8 +197,9 @@
 				
 				//
 				// Anything over a 1MB we chunk upload if we can slice the file
+				//	Removed mozSlice as it doesn't send a file name so the data is ignored by rack
 				//
-				if(!!options.partURL && file.size > (1024 * 1024) && typeof(file.slice || file.mozSlice || file.webkitSlice) == 'function') {
+				if(file.size > (1024 * 1024) && typeof(file.slice || file.webkitSlice) == 'function') {
 					var theurl = (typeof(options.baseURL) == 'function' ? options.baseURL() : options.baseURL) + '/resumable_upload.json',
 					params = {
 						'resume[file_name]': file.name,
@@ -214,14 +214,14 @@
 					// Ensure the slice method is defined
 					//
 					if(typeof(file.slice) != 'function')
-						file.slice = file.mozSlice || file.webkitSlice;
+						file.slice = file.webkitSlice; // || file.mozSlice
 					
 					$this.data('uploader')['xhr'] = $.ajax({
 						url: theurl,
 						data: params,
 						type: 'GET',
 						dataType: 'json',
-						done: function (data, status, xhr) {
+						success: function (data, status, xhr) {
 							var retries = 0;
 							
 							function sendChunk(currentPart) {								
@@ -254,7 +254,7 @@
 										return xhr;
 									},
 									dataType: 'json',
-									done: function (data, status, xhr) {
+									success: function (data, status, xhr) {
 										if(data.next_part == false) {
 											$this.triggerHandler('onUploadFinish.uploader', [xhr.responseText, file.name, number, total]);
 											options.setStatus(options.genStatus(1, true));
@@ -265,29 +265,28 @@
 											sendChunk(data.next_part);
 										}
 									},
-									fail: function (xhr, status, error) {
-										if(options.retry_part_errors && retries < options.retry_limit) {
-											retries = retries + 1;
-											sendChunk(currentPart);
-										}
-										else
-											on_error(xhr, error);
-									},
-									always: function(xhr, status) {
+									error: function (xhr, status, error) {
 										if(status == 'abort')
 											abort();
+										else {
+											if(options.retry_part_errors && retries < options.retry_limit) {
+												retries = retries + 1;
+												sendChunk(currentPart);
+											}
+											else
+												on_error(xhr, error);
+										}
 									}
 								});
 							}
 							
 							sendChunk(data.next_part);
 						},
-						fail: function (xhr, status, error) {
-							on_error(xhr, error);
-						},
-						always: function(xhr, status) {
+						error: function (xhr, status, error) {
 							if(status == 'abort')
 								abort();
+							else
+								on_error(xhr, error);
 						}
 					});
 					
@@ -307,6 +306,7 @@
 						url: (typeof(options.baseURL) == 'function' ? options.baseURL() : options.baseURL) + '/regular_upload.json',
 						type: 'POST',
 						data: f,
+						dataType: 'json',
 						processData: false,		// Do not process the data
 						contentType: false,
 						xhr: function() {
@@ -327,16 +327,16 @@
 								xhr.setRequestHeader(key, val);
 							});
 						},
-						done: function (data, status, xhr) {
+						success: function (data, status, xhr) {
 							$this.triggerHandler('onUploadFinish.uploader', [xhr.responseText, file.name, number, total]);
 							options.setStatus(options.genStatus(1, true));
 							options.setProgress(options.genProgress(file.size, file.size));
 							upload_file(number + 1);
 						},
-						fail: function (xhr, status, error) {
+						error: function (xhr, status, error) {
 							on_error(xhr, error);
 						},
-						always: function(xhr, status) {
+						complete: function(xhr, status) {
 							if(status == 'abort')
 								abort();
 						}

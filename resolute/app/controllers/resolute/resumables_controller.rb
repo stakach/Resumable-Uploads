@@ -32,7 +32,7 @@ module Resolute
 		def resumable_upload
 			user = get_current_user
 			if user.nil?
-				render :nothing => true, :layout => false, :status => :forbidden	# 403
+				render :text => '{}', :layout => false, :status => :forbidden	# 403
 				return
 			end
 			
@@ -75,7 +75,7 @@ module Resolute
 				#
 				resume = Resumable.find(params[:id])
 				if resume.user_id != user.to_s
-					render :nothing => true, :layout => false, :status => :forbidden	# 403
+					render :text => '{}', :layout => false, :status => :forbidden	# 403
 					return
 				end
 				
@@ -136,7 +136,7 @@ module Resolute
 				process_bad_request(resp)
 				return	# Ensure only a single call to render
 			end
-			render :nothing => true, :layout => false
+			render :text => '{}', :layout => false
 		end
 		
 		
@@ -147,7 +147,7 @@ module Resolute
 			if resp.class == Array 	# Assume error array
 				render :json => {:error => resp}, :layout => false, :status => :not_acceptable	# 406
 			else
-				render :nothing => true, :layout => false, :status => :unprocessable_entity		# 422
+				render :text => '{}', :layout => false, :status => :unprocessable_entity		# 422
 			end
 		end
 		
@@ -166,7 +166,7 @@ module Resolute
 				:params => custom_parameters,
 				:resumable => db_entry
 			}
-			Resolute.upload_completed.call(result)
+			Resolute.upload_completed.bind(self).call(result)
 		end
 		
 		def check_format_supported(user, filename, custom_parameters)
@@ -175,7 +175,7 @@ module Resolute
 				:filename => filename,
 				:params => custom_parameters
 			}
-			Resolute.check_supported.call(file_info)
+			Resolute.check_supported.bind(self).call(file_info)
 		end
 	end
 end

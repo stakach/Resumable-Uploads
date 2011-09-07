@@ -10,7 +10,7 @@
 
 module Resolute
 	class Resumable < ActiveRecord::Base
-		before_create	:ready_file
+		before_validation	:ready_file
 		
 		
 		def next_part
@@ -78,7 +78,7 @@ module Resolute
 			
 			# Finally, replace all non alphanumeric or periods with underscore
 			newname = "#{Time.now.to_i}" + filename.gsub(/[^\w\.\-]/,'_')
-			filepath = File.join(Resolute.upload_folder, user.gsub(/[^\w\.\-]/,'_'))
+			filepath = File.join(Resolute.upload_folder, user.to_s.gsub(/[^\w\.\-]/,'_'))
 			
 			FileUtils.makedirs filepath
 			return File.join(filepath, newname)
