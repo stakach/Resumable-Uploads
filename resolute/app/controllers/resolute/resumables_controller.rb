@@ -54,7 +54,7 @@ module Resolute
 				#
 				# Is there an existing file? If not create an entry for this one
 				#
-				if(found.nil?)
+				if found.nil?
 					#
 					# Check if file is a valid format before upload
 					#
@@ -66,6 +66,7 @@ module Resolute
 					resume.save
 				else
 					resume = found
+					resume.touch		# Resumable file last accessed
 				end
 				
 				render :json => {:file_id => resume.id, :next_part => resume.next_part}, :layout => false

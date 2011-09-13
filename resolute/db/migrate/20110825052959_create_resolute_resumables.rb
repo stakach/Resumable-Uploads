@@ -9,6 +9,8 @@ class CreateResoluteResumables < ActiveRecord::Migration
 			t.integer	:file_size,		:allow_null => false
 			t.datetime	:file_modified
 			t.text		:file_location,	:allow_null => false
+			
+			t.timestamps
 		end
 	end
 end

@@ -59,6 +59,18 @@ module Resolute
 		#	self[:paramters] = paramHash.to_json
 		#end
 		
+		#
+		# Assumes delayed_job is in use (not required)
+		#
+		def self.clean_up
+			Resumable.where('updated_at < ?', Time.now - 1.week).each do |resumable|
+				resumable.destroy
+				File.delete(resumable.file_location)
+			end
+			
+			self.delay({:run_at => 1.day.from_now, :priority => 10}).clean_up
+		end
+		
 		
 		protected
 		
