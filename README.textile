@@ -36,7 +36,9 @@ h3. Basic Usage
 # Run migrations
 #* First need to copy over the migrations: rake railties:install:migrations
 #* Then: rake db:migrate
-# Include *resumables.js* file in your app/assets/javascripts/application.js file
+# In the head section of your document include: <%= javascript_include_tag *Resolute.js %>
+#* This provides client side internationalisation based on the current sessions locale
+#* Alternatively Include *aca-i18n.js*, *resumables-en.js* and *resumables.js* file in your app/assets/javascripts/application.js file
 # Configure the client side jQuery as you wish (outlined below)
 
 h3. Engine Config
@@ -72,6 +74,7 @@ In your initializer:
 			#
 			return me.errors	# Provide the client side with some information
 		else
+			FileUtils.mv(result[:filepath], me.storage_location)	# etc.. This should be in the model in after_create
 			return true
 		end
 	end
