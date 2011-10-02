@@ -1,6 +1,11 @@
 h1. Resumable File Uploads for HTML5
 
 These are the skeleton files for providing resumable file uploads in Rails.
+Works in
+* Chrome 8+
+* Safari 5+
+* Firefox 7+
+* IE 10+
 
 
 h2. How it works

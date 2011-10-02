@@ -197,9 +197,9 @@
 				
 				//
 				// Anything over a 1MB we chunk upload if we can slice the file
-				//	Removed mozSlice as it doesn't send a file name so the data is ignored by rack
+				//	FIXED in FF7.0!! -Removed mozSlice as it doesn't send a file name so the data is ignored by rack-
 				//
-				if(file.size > (1024 * 1024) && typeof(file.slice || file.webkitSlice) == 'function') {
+				if(file.size > (1024 * 1024) && typeof(file.slice || file.webkitSlice || file.mozSlice) == 'function') {
 					var theurl = (typeof(options.baseURL) == 'function' ? options.baseURL() : options.baseURL) + '/resumable_upload.json',
 					params = {
 						'resume[file_name]': file.name,
@@ -214,7 +214,7 @@
 					// Ensure the slice method is defined
 					//
 					if(typeof(file.slice) != 'function')
-						file.slice = file.webkitSlice; // || file.mozSlice
+						file.slice = file.webkitSlice || file.mozSlice;
 					
 					$this.data('uploader')['xhr'] = $.ajax({
 						url: theurl,
