@@ -68,7 +68,7 @@ module Resolute
 				File.delete(resumable.file_location)
 			end
 			
-			self.delay({:run_at => 1.day.from_now, :priority => 10}).clean_up
+			self.delay({:run_at => 1.day.from_now, :priority => 10, :queue => 'media'}).clean_up
 		end
 		
 		
