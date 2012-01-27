@@ -7,17 +7,17 @@ require "resolute/version"
 Gem::Specification.new do |s|
   s.name        = "resolute"
   s.version     = Resolute::VERSION
-  s.authors     = ["TODO: Your name"]
-  s.email       = ["TODO: Your email"]
-  s.homepage    = "TODO"
-  s.summary     = "TODO: Summary of Resolute."
-  s.description = "TODO: Description of Resolute."
+  s.authors     = ["Stephen von Takach"]
+  s.email       = ["steve@advancedcontrol.com.au"]
+  s.homepage    = "http://advancedcontrol.com.au/"
+  s.summary     = "Resumable file uploads in HTML5"
+  s.description = "Provides code to manage and simplify resumable file uploads"
 
-  s.files = Dir["{app,config,db,lib}/**/*"] + ["MIT-LICENSE", "Rakefile", "README.rdoc"]
+  s.files = Dir["{app,config,db,lib}/**/*"] + ["LGPL3-LICENSE", "Rakefile", "README.textile"]
   s.test_files = Dir["test/**/*"]
 
-  s.add_dependency "rails", "~> 3.1.0.rc6"
-  # s.add_dependency "jquery-rails"
+  s.add_dependency "rails"
+  s.add_dependency "jquery-rails"
 
   s.add_development_dependency "sqlite3"
 end

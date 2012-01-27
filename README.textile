@@ -7,6 +7,8 @@ Works in
 * Firefox 7+
 * IE 10+
 
+For ajax upload fallback in older browsers use: https://github.com/JangoSteve/remotipart
+
 
 h2. How it works
 
@@ -22,6 +24,10 @@ h2. How it works
 
 I've defined the part size to be a constant 1mb (1024 x 1024). Feel free to adjust this as you see fit.
 
+Other features include:
+* Appending more files while an upload is taking place
+* Pausing and resuming uploads (to the nearest mb) - when blobs are supported
+* Client side filtering of files that can be uploaded where desirable
 
 h2. Using it with Rails 3.1
 
@@ -33,17 +39,14 @@ I've made the following assumptions
 
 h3. Basic Usage
 
-# Copy folder into the vendor directory (not the plugins folder)
-# Create an entry in your gem file for it: gem 'resolute', :path => '/vendor/resolute'
+# Create an entry in your gem file for it: gem 'resolute', :git => 'git://github.com/stakach/Resumable-Uploads.git'
 # Create an initializer for the configuration: config/initializers/uploads.rb (for example)
 #* Enter config (outlined in the next section)
 # Update your routes
 # Run migrations
 #* First need to copy over the migrations: rake railties:install:migrations
 #* Then: rake db:migrate
-# In the head section of your document include: <%= javascript_include_tag *Resolute.js %>
-#* This provides client side internationalisation based on the current sessions locale
-#* Alternatively Include *aca-i18n.js*, *resumables-en.js* and *resumables.js* file in your app/assets/javascripts/application.js file
+# In the head section of your document include: <%= javascript_include_tag resumables.js %>
 # Configure the client side jQuery as you wish (outlined below)
 
 h3. Engine Config
@@ -122,24 +125,15 @@ Provides the hooks into your web application to provide upload hotspots (think g
 	
 	$('#file_input, #drop_spot').resumable({
 		//
-		// Event callbacks
+		// Event callbacks (can be set here or bound at any point in time)
 		//
-		onStart: function(event, total) { return true; },
-		onUploadStarted: function(event, name, number, total) { return true; },
-		onUploadProgress: function(event, progress, name, number, total) { },
-		onUploadFinish: function(event, response, name, number, total) { },
-		onUploadError: function(event, name, error, messages) { },
-		onFinish: function(event, total) { },
-		
-		startDragHover: function(){},	// Hovering over hotspot
-		endDragHover: function(){},		// No longer hovering over the hotspot
-		
-		//
-		// Informational callbacks
-		//
-		setName: function(text) { },
-		setStatus: function(text) { },
-		setProgress: function(value) { },
+		//onStart: return modified file list or undefined,			// Passed: (event, file list)
+		//onAppendFiles: return modified file list or undefined,	// Passed: (event, file list)
+		//onUploadStarted: returning false will skip the file,		// Passed: (event, name, number, total)
+		//onUploadProgress:					// Passed: (event, progress, name, number, total)
+		//onUploadFinish:					// Passed: (event, response, name, number, total)
+		//onUploadError:					// Passed: (event, name, error, messages)
+		//onFinish:							// Passed: (event, total, failures)
 		
 		//
 		// Configuration options
@@ -149,92 +143,11 @@ Provides the hooks into your web application to provide upload hotspots (think g
 		
 		autostart: true,			// On change if using input box
 		autoclear: true,			// Clears the file upload input box once complete
+		disableInput: true,			// Prevents an input field being used while uploads are occuring
 		retry_part_errors: false,	// Applies only to resumable uploads
 		retry_limit: 3,				// Number of part retries before giving up
 		halt_on_error: false		// Stop uploading further files?
 	});
-	
-	//
-	// A more realistic setup with jquery ui
-	//
-	if ($.support.filereader && $.support.formdata) {	// Check HTML5 uploads are workable
-		var diag = $('<div />').html('<div></div><p></p>');
-		var progress = diag.children('div').progressbar({
-			value: 0
-		});
-		var status = diag.children('p');
-		var failures = 0;
-		
-		$('#drop_spot').resumable({
-			onStart: function (event, total) {
-				// Make sure we warn the user before exiting the page while uploading
-				window.onbeforeunload = function() {return "You are attempting to leave this page while an upload is taking place. Are you sure you want to leave?";};
-				
-				failures = 0;
-				progress.progressbar("value", 0);
-
-				var thebuttons = {};
-				thebuttons["Cancel"] = function () {
-					$('#drop_spot').trigger('cancelAll');
-				};
-				diag.dialog({
-					modal: true,
-					buttons: thebuttons,
-					close: function (event, ui) {
-						if (window.onbeforeunload != null)
-							draghotspot.trigger('cancelAll');	// This will call onFinish
-					}
-				});
-				return true;
-			},
-			setName: function (text) {
-				diag.dialog("option", "title", text);
-			},
-			setStatus: function (text) {
-				status.text(text);
-			},
-			setProgress: function (val) {
-				progress.progressbar("value", Math.ceil(val * 100));
-			},
-			onUploadError: function(event, name, error, messages) {
-				failures = failures + 1;
-				var inner = '<p>There were some issues uploading ' + name + ':</p><ul>';
-				
-				//
-				// Display active record validation errors if avaliable
-				//
-				if(messages.error.constructor == Array) {
-					$.each(messages.error, function (key, val) {
-						inner = inner + '<li>' + key + '<ul>';
-						$.each(val, function (index, inval) {
-							inner = inner + '<li>' + inval + '</li>';
-						});
-						inner = inner + '</ul></li>';
-					});
-				} else if (messages.error != null) {
-					inner = inner + '<li>' + messages.error + '</li>';
-				} else {
-					inner = inner + '<li>' + error + '</li>';
-				}
-				inner = inner + '</ul>';
-				$.noticeAdd({ text: inner, stay: true });
-			},
-			onFinish: function (event, total) {
-				window.onbeforeunload = null; 		// No more need for user warning
-				diag.dialog("close").dialog("destroy");
-				//
-				// Update view here then inform users
-				//
-				$.noticeAdd({ text: (total - failures) + " items successfully uploaded", stayTime: 6000 });
-			},
-			startDragHover: function(){
-				$('#drop_spot > #highlighter').stop(true).animate({opacity:1});
-			},
-			endDragHover: function(){
-				$('#drop_spot > #highlighter').stop(true).animate({opacity:0.2});
-			}
-		});
-	}
 
 </code>
 </pre>
