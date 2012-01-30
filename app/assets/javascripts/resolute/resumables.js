@@ -81,7 +81,7 @@
 			//
 			// Files can be canceled at this point (maybe some are not supported)
 			//
-			var file = files[number];
+			var file = data.files[number];
 			if (!$this.triggerHandler('onUploadStarted', [file.name, number, data.files.length])) {
 				return upload_file(number + 1);
 			}
