@@ -33,7 +33,7 @@
 		//
 		result = $this.triggerHandler('onStart', [data.files]);
 		if (result !== false) {
-			if(result !== undefined)
+			if (result instanceof Array)
 				data.files = result;
 		} else {
 			return false;
@@ -291,10 +291,10 @@
 			//
 			// Add the files to the list
 			//
-			if(result === undefined)
+			if (!(result instanceof Array))
 				result = files;
 			
-			data.files.push.apply(data.files, files);
+			data.files.push.apply(data.files, result);
 		}
 	}
 	
