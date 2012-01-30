@@ -73,7 +73,7 @@
 		// This manages the file upload
 		//
 		function upload_file(number) {
-			if (number == total) {
+			if (number == data.files.length) {
 				upload_finished(number, failures);
 				return;
 			}
@@ -82,7 +82,7 @@
 			// Files can be canceled at this point (maybe some are not supported)
 			//
 			var file = files[number];
-			if (!$this.triggerHandler('onUploadStarted', [file.name, number, total])) {
+			if (!$this.triggerHandler('onUploadStarted', [file.name, number, data.files.length])) {
 				return upload_file(number + 1);
 			}
 			
@@ -175,14 +175,14 @@
 									var xhr = new XMLHttpRequest();
 									$this.data('resumable').xhr = xhr;
 									xhr.upload['onprogress'] = function(rpe){
-										$this.triggerHandler('onUploadProgress', [(offset + rpe.loaded) / file.size, file.name, number, total]);
+										$this.triggerHandler('onUploadProgress', [(offset + rpe.loaded) / file.size, file.name, number, data.files.length]);
 									};
 									return xhr;
 								},
 								dataType: 'json',
 								success: function (data, status, xhr) {
 									if(data.next_part == false) {
-										$this.triggerHandler('onUploadFinish', [xhr.responseText, file.name, number, total]);
+										$this.triggerHandler('onUploadFinish', [xhr.responseText, file.name, number, data.files.length]);
 										upload_file(number + 1);
 									} else {
 										retries = 0;
@@ -237,7 +237,7 @@
 						var xhr = new XMLHttpRequest();
 						$this.data('resumable').xhr = xhr;
 						xhr.upload['onprogress'] = function(rpe){
-							$this.triggerHandler('onUploadProgress', [rpe.loaded / rpe.total, file.name, number, total]);
+							$this.triggerHandler('onUploadProgress', [rpe.loaded / rpe.total, file.name, number, data.files.length]);
 						};
 						return xhr;
 					},
@@ -250,7 +250,7 @@
 						});
 					},
 					success: function (data, status, xhr) {
-						$this.triggerHandler('onUploadFinish', [xhr.responseText, file.name, number, total]);
+						$this.triggerHandler('onUploadFinish', [xhr.responseText, file.name, number, data.files.length]);
 						upload_file(number + 1);
 					},
 					error: function (xhr, status, error) {

@@ -41,9 +41,4 @@ module Resolute
 		@supported_callback = proc
 	end
 	self.check_supported = Proc.new {|file_info| return true}	# Default accept all
-	
-	
-	def self.js
-		return ["resolute/resumables-#{I18n.locale}", "resolute/resumables"]
-	end
 end
