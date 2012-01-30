@@ -132,7 +132,10 @@ Provides the hooks into your web application to provide upload hotspots (think g
 		//onUploadStarted: returning false will skip the file,		// Passed: (event, name, index, total)
 		//onUploadProgress:					// Passed: (event, progress, name, index, total)
 		//onUploadFinish:					// Passed: (event, response, name, index, total)
-		//onUploadError:					// Passed: (event, name, index, error, messages)
+		//onUploadError:					// Passed: (event, name, index, error_code, response_text)
+		//	403: Forbidden - not logged in or not your file
+		//	406: Not acceptable - could not save, maybe bad params or file format not supported.
+		//	422: unprocessable entity - unknown error and could not save.
 		//onFinish:							// Passed: (event, total, failures)
 		
 		//
@@ -152,6 +155,82 @@ Provides the hooks into your web application to provide upload hotspots (think g
 </code>
 </pre>
 
+
+Here is a real world example using jQuery UI
+
+
+<pre>
+<code>
+	
+	if ($.support.filereader && $.support.formdata) {
+		var diag = $('<div />').html('<div></div><p></p>');
+		var progress = diag.children('div').progressbar({
+			value: 0
+		});
+		var status = diag.children('p');
+		var draghotspot = $('#library > div');
+
+		draghotspot.resumable({
+			onStart: function (event, files) {
+				window.onbeforeunload = confirmExit; // Make sure we warn the user before exiting the page while uploading
+				failures = 0;
+				progress.progressbar("value", 0);
+
+				var thebuttons = {};
+				thebuttons["Cancel"] = function () {
+					draghotspot.trigger('cancelAll');
+				};
+				diag.dialog({
+					modal: true,
+					buttons: thebuttons,
+					close: function () {
+						if (window.onbeforeunload != null)
+							draghotspot.trigger('cancelAll');
+					}
+				});
+				return true;
+			},
+			onUploadStarted: function (event, name, index, total) {
+				diag.dialog('option', 'title', name);
+				status.text('Uploading ' + (index + 1) + ' of ' + total);
+			},
+			onUploadProgress: function (event, completed, name, index, total) {
+				progress.progressbar("value", Math.ceil(completed * 100));
+			},
+			onUploadError: function(event, name, index, error, messages) {
+				if(error == 406)
+					$.noticeAdd({ text: "File " + name + " not supported", stayTime: 6000 });
+				else if (error == 403)
+					$.noticeAdd({ text: "Access denied uploading " + name + ". Try logging off and on again", stayTime: 6000 });
+				else
+					$.noticeAdd({ text: "Unknown error while processing " + name + ". Please try again", stayTime: 6000 });
+			},
+			onFinish: function (event, total, failures) {
+				window.onbeforeunload = null; 		// No more need for user warning
+				diag.dialog("close").dialog("destroy");
+				$.noticeAdd({ text: (total - failures) + " items successfully uploaded", stayTime: 6000 });
+			}
+		}).css({
+			//
+			// Add a background informing drag and drop uploads are avaliable
+			//
+			'background-image': 'url(<%= asset_path 'drag-background.png' %>)',
+			'background-repeat': 'no-repeat',
+			'background-position': 'center center'
+		}).bind('dragenter dragover', function(){
+			//
+			// Highlight drag zone here (like gmail)
+			//
+			return false;	// required here
+		}).bind('dragleave drop', function(){
+			//
+			// Remove highlighting here
+			//
+		});
+	}
+
+</code>
+</pre>
 
 
 h2. Credits

@@ -103,18 +103,16 @@
 			// Complete upload error
 			//
 			function on_error(xhr, e) {
-				message = {error: null}
-				
-				if (xhr.status == 403)			// Forbidden - ie not logged in or not your file
-					message.error = 'access denied';
-				else if  (xhr.status == 406)	// Not acceptable - could not save, maybe bad params or file format. There is a message avaliable
-					message.error = jQuery.parseJSON(xhr.responseText).error;	// This will always be an array
-				//else if  (xhr.status == 422)	// unprocessable entity - unknown error. Could not save and no error message
-				//	message['error'] = '';
-				
 				failures = failures + 1;
 				
-				$this.triggerHandler('onUploadError', [file.name, number, e, message]);
+				//
+				// status
+				//	403: Forbidden - ie not logged in or not your file
+				//	406: Not acceptable - could not save, maybe bad params or file format not supported.
+				//	422: unprocessable entity - unknown error and could not save.
+				//
+				
+				$this.triggerHandler('onUploadError', [file.name, number, xhr.status, xhr.responseText]);
 				if (options.halt_on_error) {
 					upload_finished(number, failures);
 				} else {
@@ -326,14 +324,14 @@
 					//onUploadStarted: returning false will skip the file,		// Passed: (event, name, index, total)
 					//onUploadProgress:					// Passed: (event, progress, name, index, total)
 					//onUploadFinish:					// Passed: (event, response, name, index, total)
-					//onUploadError:					// Passed: (event, name, index, error, messages)
+					//onUploadError:					// Passed: (event, name, index, error, response)
 					//onFinish:							// Passed: (event, total, failures)
 					
 					
 					//
 					// Application data required
 					//
-					additionalParameters: {},	//JS Object or function(file)
+					//additionalParameters: {},	//JS Object or function(file)
 					baseURL: '/uploads',		// resumable_upload, regular_upload
 
 					autostart: true,			// On change if using input box
