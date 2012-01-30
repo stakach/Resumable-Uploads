@@ -129,10 +129,10 @@ Provides the hooks into your web application to provide upload hotspots (think g
 		//
 		//onStart: return modified file list or undefined,			// Passed: (event, file list)
 		//onAppendFiles: return modified file list or undefined,	// Passed: (event, file list)
-		//onUploadStarted: returning false will skip the file,		// Passed: (event, name, number, total)
-		//onUploadProgress:					// Passed: (event, progress, name, number, total)
-		//onUploadFinish:					// Passed: (event, response, name, number, total)
-		//onUploadError:					// Passed: (event, name, error, messages)
+		//onUploadStarted: returning false will skip the file,		// Passed: (event, name, index, total)
+		//onUploadProgress:					// Passed: (event, progress, name, index, total)
+		//onUploadFinish:					// Passed: (event, response, name, index, total)
+		//onUploadError:					// Passed: (event, name, index, error, messages)
 		//onFinish:							// Passed: (event, total, failures)
 		
 		//

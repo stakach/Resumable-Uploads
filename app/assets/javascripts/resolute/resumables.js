@@ -82,7 +82,7 @@
 			// Files can be canceled at this point (maybe some are not supported)
 			//
 			var file = data.files[number];
-			if (!$this.triggerHandler('onUploadStarted', [file.name, number, data.files.length])) {
+			if ($this.triggerHandler('onUploadStarted', [file.name, number, data.files.length]) === false) {
 				return upload_file(number + 1);
 			}
 			
@@ -114,7 +114,7 @@
 				
 				failures = failures + 1;
 				
-				$this.triggerHandler('onUploadError', [file.name, e, message]);
+				$this.triggerHandler('onUploadError', [file.name, number, e, message]);
 				if (options.halt_on_error) {
 					upload_finished(number, failures);
 				} else {
@@ -323,10 +323,10 @@
 					//
 					//onStart: return modified file list or undefined,			// Passed: (event, file list)
 					//onAppendFiles: return modified file list or undefined,	// Passed: (event, file list)
-					//onUploadStarted: returning false will skip the file,		// Passed: (event, name, number, total)
-					//onUploadProgress:					// Passed: (event, progress, name, number, total)
-					//onUploadFinish:					// Passed: (event, response, name, number, total)
-					//onUploadError:					// Passed: (event, name, error, messages)
+					//onUploadStarted: returning false will skip the file,		// Passed: (event, name, index, total)
+					//onUploadProgress:					// Passed: (event, progress, name, index, total)
+					//onUploadFinish:					// Passed: (event, response, name, index, total)
+					//onUploadError:					// Passed: (event, name, index, error, messages)
 					//onFinish:							// Passed: (event, total, failures)
 					
 					
