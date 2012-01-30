@@ -409,7 +409,7 @@
 			});
 		},
 		destroy: function() {
-			return this.each(function(){
+			return $(this).each(function(){
 				var $this = $(this),
 					data = $this.data('resumable');
 				
@@ -432,7 +432,7 @@
 			});
 		},
 		start: function() {
-			return this.each(function(){
+			return $(this).each(function(){
 				var $this = $(this);
 				
 				if(!!$this.data('resumable')) {
@@ -442,7 +442,7 @@
 			});
 		},
 		cancelCurrent: function() {
-			return this.each(function(){
+			return $(this).each(function(){
 				var $this = $(this),
 					data = $this.data('resumable');
 				
@@ -454,7 +454,7 @@
 			});
 		},
 		cancelAll: function() {
-			return this.each(function(){
+			return $(this).each(function(){
 				var $this = $(this),
 					data = $this.data('resumable');
 				
