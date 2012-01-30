@@ -149,7 +149,7 @@
 					data: params,
 					type: 'GET',
 					dataType: 'json',
-					success: function (data, status, xhr) {
+					success: function (respnose, status, xhr) {
 						var retries = 0;
 						
 						function sendChunk(currentPart) {								
@@ -161,7 +161,7 @@
 							var chunk = file.slice(offset, limit),
 								f = new FormData();
 							
-							f.append('id', data.file_id);
+							f.append('id', respnose.file_id);
 							f.append('part', currentPart);
 							f.append('chunk', chunk);
 							
@@ -180,13 +180,13 @@
 									return xhr;
 								},
 								dataType: 'json',
-								success: function (data, status, xhr) {
-									if(data.next_part == false) {
+								success: function (respnose, status, xhr) {
+									if(respnose.next_part == false) {
 										$this.triggerHandler('onUploadFinish', [xhr.responseText, file.name, number, data.files.length]);
 										upload_file(number + 1);
 									} else {
 										retries = 0;
-										sendChunk(data.next_part);
+										sendChunk(respnose.next_part);
 									}
 								},
 								error: function (xhr, status, error) {
@@ -204,7 +204,7 @@
 							});
 						}
 						
-						sendChunk(data.next_part);
+						sendChunk(respnose.next_part);
 					},
 					error: function (xhr, status, error) {
 						if(status == 'abort')
@@ -249,7 +249,7 @@
 							xhr.setRequestHeader(key, val);
 						});
 					},
-					success: function (data, status, xhr) {
+					success: function (respnose, status, xhr) {
 						$this.triggerHandler('onUploadFinish', [xhr.responseText, file.name, number, data.files.length]);
 						upload_file(number + 1);
 					},
