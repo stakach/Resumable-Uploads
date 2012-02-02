@@ -331,7 +331,7 @@
 					//
 					// Application data required
 					//
-					//additionalParameters: {},	//JS Object or function(file)
+					additionalParameters: {},	//JS Object or function(file)
 					baseURL: '/uploads',		// resumable_upload, regular_upload
 
 					autostart: true,			// On change if using input box
