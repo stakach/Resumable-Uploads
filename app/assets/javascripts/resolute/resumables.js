@@ -134,7 +134,7 @@
 				};
 				
 				if(!!options.additionalParameters)
-					params['resume[custom]'] = JSON.stringify(typeof(options.additionalParameters) == 'function' ? options.additionalParameters(file) : options.additionalParameters);
+					params['resume[paramters]'] = JSON.stringify(typeof(options.additionalParameters) == 'function' ? options.additionalParameters(file) : options.additionalParameters);
 				
 				//
 				// Ensure the slice method is defined
@@ -220,7 +220,7 @@
 					params;
 				
 				if(!!options.additionalParameters)
-					f.append('custom', JSON.stringify(typeof(options.additionalParameters) == 'function' ? options.additionalParameters(file) : options.additionalParameters));
+					f.append('paramters', JSON.stringify(typeof(options.additionalParameters) == 'function' ? options.additionalParameters(file) : options.additionalParameters));
 									
 				f.append('uploaded_file', file);
 				

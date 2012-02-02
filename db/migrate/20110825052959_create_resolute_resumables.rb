@@ -3,7 +3,7 @@ class CreateResoluteResumables < ActiveRecord::Migration
 		create_table :resolute_resumables do |t|
 			t.string	:user_id,			:allow_null => false
 			
-			t.text		:paramters
+			t.text		:custom_params
 			
 			t.string	:file_name,		:allow_null => false
 			t.integer	:file_size,		:allow_null => false

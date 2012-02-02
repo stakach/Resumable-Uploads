@@ -58,7 +58,7 @@ module Resolute
 					#
 					# Check if file is a valid format before upload
 					#
-					resp = check_format_supported(user, resume.file_name, resume.paramters)
+					resp = check_format_supported(user, resume.file_name, resume.custom_params)
 					if resp != true
 						process_bad_request(resp)
 						return	# Ensure only a single call to render
@@ -83,7 +83,7 @@ module Resolute
 				next_part = resume.apply_part(params[:part].to_i, params[:chunk])
 				
 				if next_part == false
-					resp = inform_upload_completed(user, resume.file_name, resume.file_location, resume.paramters, resume)
+					resp = inform_upload_completed(user, resume.file_name, resume.file_location, resume.custom_params, resume)
 					
 					#
 					# Check response
@@ -111,14 +111,14 @@ module Resolute
 			
 			filepath = Resumable.sanitize_filename(params[:uploaded_file].original_filename, user)
 			
-			if !params[:custom].nil?	# Normalise params
-				params[:custom] = JSON.parse(params[:custom], {:symbolize_names => true})
+			if !params[:custom_params].nil?	# Normalise params
+				params[:custom_params] = JSON.parse(params[:custom_params], {:symbolize_names => true})
 			end
 			
 			#
 			# Check if file is the correct format before copying out of temp folder
 			#
-			resp = check_format_supported(user, params[:uploaded_file].original_filename, params[:custom])
+			resp = check_format_supported(user, params[:uploaded_file].original_filename, params[:custom_params])
 			if resp != true
 				process_bad_request(resp)
 				return	# Ensure only a single call to render
@@ -131,7 +131,7 @@ module Resolute
 			# Inform that upload is complete (file in uploads directory)
 			#
 			resp = false
-			resp = inform_upload_completed(user, params[:uploaded_file].original_filename, filepath, params[:custom])
+			resp = inform_upload_completed(user, params[:uploaded_file].original_filename, filepath, params[:custom_params])
 			
 			if resp != true
 				process_bad_request(resp)

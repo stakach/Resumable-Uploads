@@ -44,13 +44,13 @@ module Resolute
 		
 		
 		#
-		# Store any paramters that were passed with this object
+		# Store any custom params that were passed with this object
 		#
-		def paramters
-			if self[:paramters].nil?
-				return nil
+		def custom_params
+			if self[:custom_params].nil?
+				return {}
 			end
-			JSON.parse(self[:paramters], {:symbolize_names => true})
+			JSON.parse(self[:custom_params], {:symbolize_names => true})
 		end
 		
 		##
