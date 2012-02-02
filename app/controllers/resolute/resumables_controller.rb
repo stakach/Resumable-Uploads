@@ -159,7 +159,7 @@ module Resolute
 			instance_eval &Resolute.current_user
 		end
 		
-		def inform_upload_completed(user, oringinal_name, current_path, custom_parameters = nil, db_entry = nil)
+		def inform_upload_completed(user, oringinal_name, current_path, custom_parameters = {}, db_entry = nil)
 			result = {
 				:user => user,
 				:filename => oringinal_name,
