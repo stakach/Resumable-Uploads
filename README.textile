@@ -48,7 +48,7 @@ h3. Basic Usage
 #* Then: rake db:migrate
 # Include the javascript
 #* In the head section of your document include: <%= javascript_include_tag resumables.js %>
-#* Or as an include in you application.js
+#* Or as an include in your application.js @//= require resolute/resumables@
 # Configure the client side jQuery as you wish (outlined below)
 
 h3. Engine Config
