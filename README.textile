@@ -46,7 +46,9 @@ h3. Basic Usage
 # Run migrations
 #* First need to copy over the migrations: rake railties:install:migrations
 #* Then: rake db:migrate
-# In the head section of your document include: <%= javascript_include_tag resumables.js %>
+# Include the javascript
+#* In the head section of your document include: <%= javascript_include_tag resumables.js %>
+#* Or as an include in you application.js
 # Configure the client side jQuery as you wish (outlined below)
 
 h3. Engine Config
