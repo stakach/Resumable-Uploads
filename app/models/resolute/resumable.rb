@@ -89,7 +89,7 @@ module Resolute
 			# INCORRECT: just_filename = File.basename(value.gsub('\\\\', '/'))
 			
 			# Finally, replace all non alphanumeric or periods with underscore
-			newname = "#{Time.now.to_i}" + filename.gsub(/[^\w\.\-]/,'_')
+			newname = "#{Time.now.to_i}#{File.extname(filename.gsub(/[^\w\.\-]/,'_'))}"
 			filepath = File.join(Resolute.upload_folder, user.to_s.gsub(/[^\w\.\-]/,'_'))
 			
 			FileUtils.makedirs filepath
