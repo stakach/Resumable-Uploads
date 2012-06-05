@@ -64,11 +64,14 @@ module Resolute
 		#
 		def self.clean_up
 			Resumable.where('updated_at < ?', Time.now - 1.week).each do |resumable|
-				resumable.destroy
-				File.delete(resumable.file_location)
+				begin
+					resumable.destroy
+					File.delete(resumable.file_location)
+				rescue
+				end
 			end
 			
-			self.delay({:run_at => 1.day.from_now, :priority => 10, :queue => 'media'}).clean_up
+			self.delay({:run_at => 1.day.from_now, :queue => 'clean'}).clean_up
 		end
 		
 		
