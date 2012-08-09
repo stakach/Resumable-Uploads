@@ -126,7 +126,7 @@ module Resolute
 			
 			# file copy here
 			FileUtils.cp params[:uploaded_file].tempfile.path, filepath
-			FileUtils.chmod 666, filepath
+			FileUtils.chmod 0666, filepath
 			
 			#
 			# Inform that upload is complete (file in uploads directory)

@@ -82,7 +82,7 @@ module Resolute
 			self.file_location = Resumable.sanitize_filename(self.file_name, self.user_id)
 			
 			File.new(self.file_location, 'wb').close	# Create the file
-			FileUtils.chmod 666, self.file_location
+			FileUtils.chmod 0666, self.file_location
 		end
 		
 		
@@ -97,7 +97,7 @@ module Resolute
 			filepath = File.join(Resolute.upload_folder, user.to_s.gsub(/[^\w\.\-]/,'_'))
 			
 			FileUtils.makedirs filepath
-			FileUtils.chmod 777, filepath
+			FileUtils.chmod 0777, filepath
 			return File.join(filepath, newname)
 		end
 		
