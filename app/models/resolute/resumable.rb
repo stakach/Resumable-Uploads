@@ -97,7 +97,7 @@ module Resolute
 			filepath = File.join(Resolute.upload_folder, user.to_s.gsub(/[^\w\.\-]/,'_'))
 			
 			FileUtils.makedirs filepath
-			FileUtils.chmod 666, filepath
+			FileUtils.chmod 777, filepath
 			return File.join(filepath, newname)
 		end
 		
