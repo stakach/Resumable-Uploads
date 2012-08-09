@@ -72,7 +72,7 @@ module Resolute
 				render :json => {:file_id => resume.id, :next_part => resume.next_part}, :layout => false
 			else
 				#
-				# Recieve a chunk of data and save it
+				# receive a chunk of data and save it
 				#
 				resume = Resumable.find(params[:id])
 				if resume.user_id != user.to_s
@@ -126,6 +126,7 @@ module Resolute
 			
 			# file copy here
 			FileUtils.cp params[:uploaded_file].tempfile.path, filepath
+			FileUtils.chmod 666, filepath
 			
 			#
 			# Inform that upload is complete (file in uploads directory)
